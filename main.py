@@ -1,12 +1,15 @@
 import tsplib95 as tsp
 import random
+import math
 
-def fitnessFunction(tour, problem):
+problem = None
+
+def fitnessFunction(tour):
   return sum(problem.get_weight(tour[i], 
                                 tour[(i + 1) % len(tour)])
                                 for i in range(len(tour)))
 
-def GenerateInitialSolution(problem):
+def GenerateInitialSolution():
   nodes = list(problem.get_nodes())
   random.shuffle(nodes)
 
@@ -65,12 +68,35 @@ def twoOptLocalSearch(tour, problem, k=20):
 
   return best_tour
 
+#local search prvi nacin
+def singleImprovement(current, new):
+    
+    if fitnessFunction(new) < fitnessFunction(current):
+        return new
+    return current
+
+#drugi nacin - simulated annealing style, probabilistic acceptance
+def probabilisticAcceptance(current, new, T):
+    
+    currFitness = fitnessFunction(current)
+    newFitness = fitnessFunction(new)
+
+    if newFitness < currFitness:
+        return new
+    
+    diff = newFitness - currFitness
+    x = math.exp(-diff/T)
+    if random.random() < x:
+        return new
+    
+    return current
+
 if __name__ == "__main__":
   problem = tsp.load('ALL_tsp/burma14.tsp/burma14.tsp')
   tour = GenerateInitialSolution(problem)
 
   print("Generisana tura (prvih 20 čvorova):", tour[:20])
-  print("Dužina inicijalne ture:", fitnessFunction(tour, problem))
+  print("Dužina inicijalne ture:", fitnessFunction(tour))  # samo tour
 
   tour = doubleBridgePerturbation(tour)
   print("Dužina posle perturbacije:", fitnessFunction(tour, problem))
