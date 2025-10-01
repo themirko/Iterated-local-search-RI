@@ -9,6 +9,17 @@ def fitnessFunction(tour):
                                 tour[(i + 1) % len(tour)])
                                 for i in range(len(tour)))
 
+def deltaFitness(tour, lb, up):
+  n = len(tour)
+
+  i, j = tour[lb], tour[(lb + 1) % n]
+  k, l = tour[up], tour[(up + 1) % n]
+
+  old = problem.get_weight(i, j) + problem.get_weight(k, l)
+  new = problem.get_weight(i, k) + problem.get_weight(j, l)
+
+  return new - old
+
 def GenerateInitialSolution():
   nodes = list(problem.get_nodes())
   random.shuffle(nodes)
@@ -37,29 +48,31 @@ def precomputeNeighbors(tour, k=20):
 def twoOptLocalSearch(tour, k=20):
   best_tour = tour[:]
   best_fitness = fitnessFunction(best_tour)
+  neighbors = precomputeNeighbors(best_tour, k)
 
   improved = True
   while improved:
     improved = False
-    neighbors = precomputeNeighbors(best_tour, k)
 
-    for i, node_i in enumerate(best_tour):
-      for j_idx, _ in neighbors[node_i]:
-        
+    for i, node_id in enumerate(best_tour):
+      for j, _ in neighbors[node_id]:
         if (
-            abs(i - j_idx) <= 1
-            or (i == 0 and j_idx == len(best_tour) - 1)
-            or j_idx <= i
+            abs(i - j) <= 1
+            or (i == 0 and j == len(best_tour) - 1)
+            or j <= i
         ):
           continue
 
-        candidate = (
-          best_tour[:i+1] + best_tour[i+1:j_idx+1][::-1] + best_tour[j_idx+1:])
-        candidate_fitness = fitnessFunction(candidate)
+        delta = deltaFitness(best_tour, i, j)
+        if delta < 0:
+          
+          best_tour = (
+            best_tour[:i+1] +
+            best_tour[i+1:j+1][::-1] +
+            best_tour[j+1:]
+          )
 
-        if candidate_fitness < best_fitness:
-          best_tour = candidate
-          best_fitness = candidate_fitness
+          best_fitness += delta
           improved = True
           break
 
@@ -67,6 +80,7 @@ def twoOptLocalSearch(tour, k=20):
         break
 
   return best_tour
+
 
 #local search prvi nacin
 def singleImprovement(current, new):
@@ -92,7 +106,7 @@ def probabilisticAcceptance(current, new, T):
     return current
 
 if __name__ == "__main__":
-  problem = tsp.load('ALL_tsp/burma14.tsp/burma14.tsp')
+  problem = tsp.load('ALL_tsp/pcb442.tsp/pcb442.tsp')
   tour = GenerateInitialSolution()
 
   print("Generisana tura (prvih 20 čvorova):", tour[:20])
@@ -101,6 +115,9 @@ if __name__ == "__main__":
   tour = doubleBridgePerturbation(tour)
   print("Dužina posle perturbacije:", fitnessFunction(tour))
 
-  best_tour = twoOptLocalSearch(tour)
+  best_tour = twoOptLocalSearch(tour, 5)
 
-  print("Dužina posle perturbacije:", fitnessFunction(best_tour))
+  print("Dužina posle localSearcha:", fitnessFunction(best_tour))
+
+  best_tour = probabilisticAcceptance(tour, best_tour, 500)
+  print("Dužina posle Accepetnca:", fitnessFunction(best_tour))
