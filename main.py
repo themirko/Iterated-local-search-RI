@@ -1,8 +1,10 @@
 import tsplib95 as tsp
 import random
+import time
 import math
 
 problem = None
+iterations = 0
 
 #-------------------------------------------------------------------------------
 
@@ -59,6 +61,8 @@ def precomputeNeighbors(tour, k=20):
 #-------------------------------------------------------------------------------
 
 def twoOptLocalSearch(tour, k=20):
+  global iterations
+
   best_tour = tour[:]
   best_fitness = fitnessFunction(best_tour)
   neighbors = precomputeNeighbors(best_tour, k)
@@ -66,6 +70,7 @@ def twoOptLocalSearch(tour, k=20):
   improved = True
   while improved:
     improved = False
+    iterations += 1
 
     for i, node_id in enumerate(best_tour):
       for j, _ in neighbors[node_id]:
@@ -120,31 +125,48 @@ def probabilisticAcceptance(current, new, T):
 #-------------------------------------------------------------------------------
 
 def main():
-  iterations = 10
-  k = 15
+  global iterations
+
+  k = 25
   T = 500
+  MAX_TIME = 120  # sekunde
 
   global problem
-  problem = tsp.load('ALL_tsp/pcb442.tsp/pcb442.tsp')
+  problem = tsp.load('ALL_tsp/kroA100.tsp/kroA100.tsp')
+
+  optimal = tsp.load('ALL_tsp/kroA100.opt.tour/kroA100.opt.tour')
+  optimal_fitness = fitnessFunction(optimal.tours[0])
+  print("Optimal fitness:", optimal_fitness)
 
   s = GenerateInitialSolution()
   print("Initial fitness:", fitnessFunction(s))
 
   s = twoOptLocalSearch(s, k)
   print("Fitness before the loop:", fitnessFunction(s))
- 
+
   best = s
 
-  for it in range(iterations):
+  start = time.time()
+  
+  while time.time() - start < MAX_TIME:
     s_dash = doubleBridgePerturbation(s)
     s_dash = twoOptLocalSearch(s_dash, k)
 
     s = probabilisticAcceptance(s, s_dash, T)
+    # s = singleImprovement(s, s_dash)
 
     if fitnessFunction(s) < fitnessFunction(best):
       best = s
 
-  print("Best fitness:", fitnessFunction(best))
+  best_fitness = fitnessFunction(best)
+  print(
+    f"Ran for {int(time.time() - start)} seconds\n"
+    f"and {iterations} iterations")
+  print("Best fitness:", best_fitness)
+
+  error = (best_fitness - optimal_fitness) / optimal_fitness * 100
+  print(f"Error: {error:.2f}%")
+
   return best
 
 #-------------------------------------------------------------------------------
