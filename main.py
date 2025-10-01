@@ -161,29 +161,24 @@ def plot_progress():
 def IteratedLocalSearch(problem_name, acceptence):
   global iterations
   global best_values
+  global problem
 
   k = 25
   T = 500
   MAX_TIME = 120  # sekunde
 
-  global problem
   problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
-
   optimal = tsp.load(f'ALL_tsp/{problem_name}.opt.tour/{problem_name}.opt.tour')
+  
   optimal_fitness = fitnessFunction(optimal.tours[0])
-  print("Optimal fitness:", optimal_fitness)
 
   s = GenerateInitialSolution()
   fitness = fitnessFunction(s)
   (best_valuesSI if acceptence else best_valuesPA).append(fitness)
-  
-  print("Initial fitness:", fitness)
 
   s = twoOptLocalSearch(s, k)
   fitness = fitnessFunction(s)
   (best_valuesSI if acceptence else best_valuesPA).append(fitness)
-
-  print("Fitness before the loop:", fitnessFunction(s))
 
   best = s
 
@@ -207,16 +202,17 @@ def IteratedLocalSearch(problem_name, acceptence):
   print(
     f"Ran for {int(time.time() - start)} seconds\n"
     f"and {iterations} iterations")
-  print("Best fitness:", best_fitness)
 
   error = (best_fitness - optimal_fitness) / optimal_fitness * 100
-  print(f"Error: {error:.2f}%")
+  print(f"Error ({'Single Improvement' if acceptence 
+                                       else 'Probabilistic Acceptance'}):" 
+                                       f"{error:.2f}%")
 
 #-------------------------------------------------------------------------------
 
 def main():
-  # 1 == si
-  # 0 == pa
+  # 1 == Single Improvement
+  # 0 == Probabilistic Acceptance
   t1 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 1))
   t2 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 0))
 
