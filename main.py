@@ -191,9 +191,7 @@ def main():
 
   plot_progress()
 
-  return best
-
 #-------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-  best_tour = main()
+  main()
