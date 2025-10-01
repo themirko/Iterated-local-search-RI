@@ -4,10 +4,14 @@ import math
 
 problem = None
 
+#-------------------------------------------------------------------------------
+
 def fitnessFunction(tour):
   return sum(problem.get_weight(tour[i], 
                                 tour[(i + 1) % len(tour)])
                                 for i in range(len(tour)))
+
+#-------------------------------------------------------------------------------
 
 def deltaFitness(tour, lb, up):
   n = len(tour)
@@ -20,11 +24,15 @@ def deltaFitness(tour, lb, up):
 
   return new - old
 
+#-------------------------------------------------------------------------------
+
 def GenerateInitialSolution():
   nodes = list(problem.get_nodes())
   random.shuffle(nodes)
 
   return nodes
+
+#-------------------------------------------------------------------------------
 
 def doubleBridgePerturbation(tour):
   n = len(tour)
@@ -34,16 +42,23 @@ def doubleBridgePerturbation(tour):
   i, j, k, l = sorted(random.sample(range(n), 4))
   return tour[:i] + tour[k:l] + tour[j:k] + tour[i:j] + tour[l:]
 
+#-------------------------------------------------------------------------------
+
 def precomputeNeighbors(tour, k=20):
   neighbors = {}
 
   for i in tour:
-    distances = [(problem.get_weight(i, j), idx, j) for idx, j in enumerate(tour) if j != i]
+    distances = ([(problem.get_weight(i, j), idx, j) 
+                 for idx, j in enumerate(tour) 
+                 if j != i])
+
     distances.sort()
 
     neighbors[i] = [(idx, j) for _, idx, j in distances[:k]]
 
   return neighbors
+
+#-------------------------------------------------------------------------------
 
 def twoOptLocalSearch(tour, k=20):
   best_tour = tour[:]
@@ -81,12 +96,15 @@ def twoOptLocalSearch(tour, k=20):
 
   return best_tour
 
+#-------------------------------------------------------------------------------
 
 def singleImprovement(current, new):
     
     if fitnessFunction(new) < fitnessFunction(current):
         return new
     return current
+
+#-------------------------------------------------------------------------------
 
 def probabilisticAcceptance(current, new, T):
     
@@ -102,6 +120,8 @@ def probabilisticAcceptance(current, new, T):
         return new
     
     return current
+
+#-------------------------------------------------------------------------------
 
 def main():
   iterations = 10
@@ -131,6 +151,7 @@ def main():
   print("Best fitness:", fitnessFunction(best))
   return best
 
+#-------------------------------------------------------------------------------
 
 if __name__ == "__main__":
   best_tour = main()
