@@ -128,7 +128,7 @@ def main():
     if fitnessFunction(s) < fitnessFunction(best):
       best = s
 
-  print("Najbolja dužina:", fitnessFunction(best))
+  print("Best fitness:", fitnessFunction(best))
   return best
 
 
