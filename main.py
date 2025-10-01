@@ -4,6 +4,8 @@ import math
 
 problem = None
 
+#-------------------------------------------------------------------------------
+
 def fitnessFunction(tour):
   return sum(problem.get_weight(tour[i], 
                                 tour[(i + 1) % len(tour)])
@@ -20,11 +22,15 @@ def deltaFitness(tour, lb, ub):
 
   return new - old
 
+#-------------------------------------------------------------------------------
+
 def GenerateInitialSolution():
   nodes = list(problem.get_nodes())
   random.shuffle(nodes)
 
   return nodes
+
+#-------------------------------------------------------------------------------
 
 def doubleBridgePerturbation(tour):
   n = len(tour)
@@ -34,16 +40,23 @@ def doubleBridgePerturbation(tour):
   i, j, k, l = sorted(random.sample(range(n), 4))
   return tour[:i] + tour[k:l] + tour[j:k] + tour[i:j] + tour[l:]
 
+#-------------------------------------------------------------------------------
+
 def precomputeNeighbors(tour, k=20):
   neighbors = {}
 
   for i in tour:
-    distances = [(problem.get_weight(i, j), idx, j) for idx, j in enumerate(tour) if j != i]
+    distances = ([(problem.get_weight(i, j), idx, j) 
+                 for idx, j in enumerate(tour) 
+                 if j != i])
+
     distances.sort()
 
     neighbors[i] = [(idx, j) for _, idx, j in distances[:k]]
 
   return neighbors
+
+#-------------------------------------------------------------------------------
 
 def twoOptLocalSearch(tour, k=20):
   best_tour = tour[:]
@@ -87,6 +100,8 @@ def singleImprovement(current, new):
         return new
     return current
 
+#-------------------------------------------------------------------------------
+
 def probabilisticAcceptance(current, new, T):
     
     currFitness = fitnessFunction(current)
@@ -101,6 +116,8 @@ def probabilisticAcceptance(current, new, T):
         return new
     
     return current
+
+#-------------------------------------------------------------------------------
 
 def main():
   iterations = 10
@@ -130,6 +147,7 @@ def main():
   print("Best fitness:", fitnessFunction(best))
   return best
 
+#-------------------------------------------------------------------------------
 
 if __name__ == "__main__":
   best_tour = main()
