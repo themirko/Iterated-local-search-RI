@@ -23,7 +23,7 @@ def doubleBridgePerturbation(tour):
   i, j, k, l = sorted(random.sample(range(n), 4))
   return tour[:i] + tour[k:l] + tour[j:k] + tour[i:j] + tour[l:]
 
-def precomputeNeighbors(tour, problem, k=20):
+def precomputeNeighbors(tour, k=20):
   neighbors = {}
 
   for i in tour:
@@ -34,14 +34,14 @@ def precomputeNeighbors(tour, problem, k=20):
 
   return neighbors
 
-def twoOptLocalSearch(tour, problem, k=20):
+def twoOptLocalSearch(tour, k=20):
   best_tour = tour[:]
-  best_fitness = fitnessFunction(best_tour, problem)
+  best_fitness = fitnessFunction(best_tour)
 
   improved = True
   while improved:
     improved = False
-    neighbors = precomputeNeighbors(best_tour, problem, k)
+    neighbors = precomputeNeighbors(best_tour, k)
 
     for i, node_i in enumerate(best_tour):
       for j_idx, _ in neighbors[node_i]:
@@ -55,7 +55,7 @@ def twoOptLocalSearch(tour, problem, k=20):
 
         candidate = (
           best_tour[:i+1] + best_tour[i+1:j_idx+1][::-1] + best_tour[j_idx+1:])
-        candidate_fitness = fitnessFunction(candidate, problem)
+        candidate_fitness = fitnessFunction(candidate)
 
         if candidate_fitness < best_fitness:
           best_tour = candidate
@@ -93,14 +93,14 @@ def probabilisticAcceptance(current, new, T):
 
 if __name__ == "__main__":
   problem = tsp.load('ALL_tsp/burma14.tsp/burma14.tsp')
-  tour = GenerateInitialSolution(problem)
+  tour = GenerateInitialSolution()
 
   print("Generisana tura (prvih 20 čvorova):", tour[:20])
   print("Dužina inicijalne ture:", fitnessFunction(tour))  # samo tour
 
   tour = doubleBridgePerturbation(tour)
-  print("Dužina posle perturbacije:", fitnessFunction(tour, problem))
+  print("Dužina posle perturbacije:", fitnessFunction(tour))
 
-  best_tour = twoOptLocalSearch(tour, problem)
+  best_tour = twoOptLocalSearch(tour)
 
-  print("Dužina posle perturbacije:", fitnessFunction(best_tour, problem))
+  print("Dužina posle perturbacije:", fitnessFunction(best_tour))
