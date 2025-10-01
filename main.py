@@ -1,10 +1,14 @@
 import tsplib95 as tsp
+import matplotlib.pyplot as plt
 import random
 import time
 import math
 
+#-------------------------------------------------------------------------------
+
 problem = None
 iterations = 0
+best_values = []
 
 #-------------------------------------------------------------------------------
 
@@ -124,8 +128,24 @@ def probabilisticAcceptance(current, new, T):
 
 #-------------------------------------------------------------------------------
 
+def plot_progress():
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(len(best_values)), 
+             best_values,
+             marker='o',
+             markersize=3,
+             linewidth=1)
+    plt.xlabel("Iterations")
+    plt.ylabel("Best value per iteration")
+    plt.title("Progress")
+    plt.grid(True)
+    plt.show()
+
+#-------------------------------------------------------------------------------
+
 def main():
   global iterations
+  global best_values
 
   k = 25
   T = 500
@@ -140,6 +160,7 @@ def main():
 
   s = GenerateInitialSolution()
   print("Initial fitness:", fitnessFunction(s))
+  best_values.append(fitnessFunction(s))
 
   s = twoOptLocalSearch(s, k)
   print("Fitness before the loop:", fitnessFunction(s))
@@ -156,6 +177,7 @@ def main():
     # s = singleImprovement(s, s_dash)
 
     if fitnessFunction(s) < fitnessFunction(best):
+      best_values.append(fitnessFunction(s))
       best = s
 
   best_fitness = fitnessFunction(best)
@@ -166,6 +188,8 @@ def main():
 
   error = (best_fitness - optimal_fitness) / optimal_fitness * 100
   print(f"Error: {error:.2f}%")
+
+  plot_progress()
 
   return best
 
