@@ -9,11 +9,11 @@ def fitnessFunction(tour):
                                 tour[(i + 1) % len(tour)])
                                 for i in range(len(tour)))
 
-def deltaFitness(tour, lb, up):
+def deltaFitness(tour, lb, ub):
   n = len(tour)
 
   i, j = tour[lb], tour[(lb + 1) % n]
-  k, l = tour[up], tour[(up + 1) % n]
+  k, l = tour[ub], tour[(ub + 1) % n]
 
   old = problem.get_weight(i, j) + problem.get_weight(k, l)
   new = problem.get_weight(i, k) + problem.get_weight(j, l)
@@ -80,7 +80,6 @@ def twoOptLocalSearch(tour, k=20):
         break
 
   return best_tour
-
 
 def singleImprovement(current, new):
     
