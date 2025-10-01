@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import random
 import time
 import math
+import threading
 
 #-------------------------------------------------------------------------------
 
 problem = None
 iterations = 0
-best_values = []
+best_valuesSI = []
+best_valuesPA = []
 
 #-------------------------------------------------------------------------------
 
@@ -130,20 +132,33 @@ def probabilisticAcceptance(current, new, T):
 
 def plot_progress():
     plt.figure(figsize=(8, 5))
-    plt.plot(range(len(best_values)), 
-             best_values,
+    
+    plt.plot(range(len(best_valuesSI)),
+             best_valuesSI,
              marker='o',
              markersize=3,
-             linewidth=1)
+             linewidth=1,
+             label="Single Acceptence",
+             color="blue")
+    
+    plt.plot(range(len(best_valuesPA)),
+             best_valuesPA,
+             marker='x',
+             markersize=3,
+             linewidth=1,
+             label="Probabilistic Acceptance",
+             color="red")
+    
     plt.xlabel("Iterations")
     plt.ylabel("Best value per iteration")
-    plt.title("Progress")
+    plt.title("Progress per iteration")
     plt.grid(True)
+    plt.legend()
     plt.show()
 
 #-------------------------------------------------------------------------------
 
-def main():
+def IteratedLocalSearch(problem_name, acceptence):
   global iterations
   global best_values
 
@@ -152,17 +167,22 @@ def main():
   MAX_TIME = 120  # sekunde
 
   global problem
-  problem = tsp.load('ALL_tsp/kroA100.tsp/kroA100.tsp')
+  problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
 
-  optimal = tsp.load('ALL_tsp/kroA100.opt.tour/kroA100.opt.tour')
+  optimal = tsp.load(f'ALL_tsp/{problem_name}.opt.tour/{problem_name}.opt.tour')
   optimal_fitness = fitnessFunction(optimal.tours[0])
   print("Optimal fitness:", optimal_fitness)
 
   s = GenerateInitialSolution()
-  print("Initial fitness:", fitnessFunction(s))
-  best_values.append(fitnessFunction(s))
+  fitness = fitnessFunction(s)
+  (best_valuesSI if acceptence else best_valuesPA).append(fitness)
+  
+  print("Initial fitness:", fitness)
 
   s = twoOptLocalSearch(s, k)
+  fitness = fitnessFunction(s)
+  (best_valuesSI if acceptence else best_valuesPA).append(fitness)
+
   print("Fitness before the loop:", fitnessFunction(s))
 
   best = s
@@ -173,11 +193,14 @@ def main():
     s_dash = doubleBridgePerturbation(s)
     s_dash = twoOptLocalSearch(s_dash, k)
 
-    s = probabilisticAcceptance(s, s_dash, T)
-    # s = singleImprovement(s, s_dash)
+    if acceptence:
+      s = singleImprovement(s, s_dash)
+    else:
+      s = probabilisticAcceptance(s, s_dash, T)
 
-    if fitnessFunction(s) < fitnessFunction(best):
-      best_values.append(fitnessFunction(s))
+    fitness = fitnessFunction(s)
+    if fitness < fitnessFunction(best):
+      (best_valuesSI if acceptence else best_valuesPA).append(fitness)
       best = s
 
   best_fitness = fitnessFunction(best)
@@ -189,7 +212,22 @@ def main():
   error = (best_fitness - optimal_fitness) / optimal_fitness * 100
   print(f"Error: {error:.2f}%")
 
+#-------------------------------------------------------------------------------
+
+def main():
+  # 1 == si
+  # 0 == pa
+  t1 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 1))
+  t2 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 0))
+
+  t1.start()
+  t2.start()
+
+  t1.join()
+  t2.join()
+
   plot_progress()
+
 
 #-------------------------------------------------------------------------------
 
