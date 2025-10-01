@@ -82,14 +82,12 @@ def twoOptLocalSearch(tour, k=20):
   return best_tour
 
 
-#local search prvi nacin
 def singleImprovement(current, new):
     
     if fitnessFunction(new) < fitnessFunction(current):
         return new
     return current
 
-#drugi nacin - simulated annealing style, probabilistic acceptance
 def probabilisticAcceptance(current, new, T):
     
     currFitness = fitnessFunction(current)
@@ -105,19 +103,34 @@ def probabilisticAcceptance(current, new, T):
     
     return current
 
-if __name__ == "__main__":
+def main():
+  iterations = 10
+  k = 15
+  T = 500
+
+  global problem
   problem = tsp.load('ALL_tsp/pcb442.tsp/pcb442.tsp')
-  tour = GenerateInitialSolution()
 
-  print("Generisana tura (prvih 20 čvorova):", tour[:20])
-  print("Dužina inicijalne ture:", fitnessFunction(tour))  # samo tour
+  s = GenerateInitialSolution()
+  print("Initial fitness:", fitnessFunction(s))
 
-  tour = doubleBridgePerturbation(tour)
-  print("Dužina posle perturbacije:", fitnessFunction(tour))
+  s = twoOptLocalSearch(s, k)
+  print("Fitness before the loop:", fitnessFunction(s))
+ 
+  best = s
 
-  best_tour = twoOptLocalSearch(tour, 5)
+  for it in range(iterations):
+    s_dash = doubleBridgePerturbation(s)
+    s_dash = twoOptLocalSearch(s_dash, k)
 
-  print("Dužina posle localSearcha:", fitnessFunction(best_tour))
+    s = probabilisticAcceptance(s, s_dash, T)
 
-  best_tour = probabilisticAcceptance(tour, best_tour, 500)
-  print("Dužina posle Accepetnca:", fitnessFunction(best_tour))
+    if fitnessFunction(s) < fitnessFunction(best):
+      best = s
+
+  print("Najbolja dužina:", fitnessFunction(best))
+  return best
+
+
+if __name__ == "__main__":
+  best_tour = main()
