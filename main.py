@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import random
 import time
 import math
-import threading
 
 #-------------------------------------------------------------------------------
 random.seed(47)
@@ -12,10 +11,26 @@ problem = None
 start_time = None
 
 iterations = 0
-MAX_TIME = 120  # sekunde
+MAX_TIME = 160  # sekunde
 
 best_valuesSI = []
 best_valuesPA = []
+
+optimal_fitness = {
+    "kroA100": 21282,
+    "d198": 15780,
+    "lin318": 42029,
+    "pcb442": 50778,
+    "rat783": 8806,
+    "pr1002": 259045,
+    "pcb1173": 56892,
+    "d1291": 50801,
+    "fl1577": 22249,
+    "pr2392": 378032,
+    "pcb3038": 137694,
+    "fl3795": 28772,
+    "rl5915": 565530
+}
 
 #-------------------------------------------------------------------------------
 
@@ -52,6 +67,27 @@ def doubleBridgePerturbation(tour):
 
   i, j, k, l = sorted(random.sample(range(n), 4))
   return tour[:i] + tour[k:l] + tour[j:k] + tour[i:j] + tour[l:]
+
+#-------------------------------------------------------------------------------
+
+def segmentShufflePerturbation(tour, minL=3):
+  n = len(tour)
+  if n < minL:
+    return tour
+  
+  maxL = max(5, n // 20)
+  segL = random.randint(minL, min(maxL, n))
+
+  start = random.randint(0, n - segL)
+  end = start + segL
+
+  prefix = tour[:start]
+  segment = tour[start:end]
+  suffix = tour[end:]
+
+  random.shuffle(segment)
+  
+  return prefix + segment + suffix
 
 #-------------------------------------------------------------------------------
 
@@ -110,6 +146,8 @@ def twoOptLocalSearch(tour, k=20):
         break
 
   return best_tour
+
+#-------------------------------------------------------------------------------
 
 def singleImprovement(current, new):
     
@@ -171,14 +209,11 @@ def IteratedLocalSearch(problem_name, acceptence):
   global MAX_TIME
 
   k = 25
-  T = 500
+  T = 920   
   iterations = 0
 
   problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
-  optimal = tsp.load(f'ALL_tsp/{problem_name}.opt.tour/{problem_name}.opt.tour')
   
-  optimal_fitness = fitnessFunction(optimal.tours[0])
-
   s = GenerateInitialSolution()
   fitness = fitnessFunction(s)
   (best_valuesSI if acceptence else best_valuesPA).append(fitness)
@@ -192,17 +227,20 @@ def IteratedLocalSearch(problem_name, acceptence):
   best = s
 
   while time.time() - start_time < MAX_TIME:
-    s_dash = doubleBridgePerturbation(s)
+    # for ii in range(3):
+    s_dash = segmentShufflePerturbation(s)
     s_dash = twoOptLocalSearch(s_dash, k)
 
     if acceptence:
       s = singleImprovement(s, s_dash)
     else:
       s = probabilisticAcceptance(s, s_dash, T)
+      T *= 0.99
 
     fitness = fitnessFunction(s)
+    (best_valuesSI if acceptence else best_valuesPA).append(fitness)
+
     if fitness < fitnessFunction(best):
-      (best_valuesSI if acceptence else best_valuesPA).append(fitness)
       best = s
 
   best_fitness = fitnessFunction(best)
@@ -210,7 +248,9 @@ def IteratedLocalSearch(problem_name, acceptence):
     f"Ran for {int(time.time() - start_time)} seconds\n"
     f"and {iterations} iterations")
 
-  error = (best_fitness - optimal_fitness) / optimal_fitness * 100
+  error = ((best_fitness - optimal_fitness[problem_name]) / 
+            optimal_fitness[problem_name] * 100)
+  
   print(f"Error ({'Single Improvement' if acceptence 
                                        else 'Probabilistic Acceptance'}):" 
                                        f"{error:.2f}%")
@@ -218,8 +258,6 @@ def IteratedLocalSearch(problem_name, acceptence):
 #-------------------------------------------------------------------------------
 
 def main():
-# kroA100, d198, lin318, pcb442, rat783, pr1002
-
   # 1 == Single Improvement
   # 0 == Probabilistic Acceptance
   IteratedLocalSearch("kroA100", 1)  # Single Improvement
