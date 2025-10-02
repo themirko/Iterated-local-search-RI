@@ -6,9 +6,14 @@ import math
 import threading
 
 #-------------------------------------------------------------------------------
+random.seed(47)
 
 problem = None
+start_time = None
+
 iterations = 0
+MAX_TIME = 120  # sekunde
+
 best_valuesSI = []
 best_valuesPA = []
 
@@ -68,13 +73,14 @@ def precomputeNeighbors(tour, k=20):
 
 def twoOptLocalSearch(tour, k=20):
   global iterations
+  global start_time
 
   best_tour = tour[:]
   best_fitness = fitnessFunction(best_tour)
   neighbors = precomputeNeighbors(best_tour, k)
 
   improved = True
-  while improved:
+  while improved and (time.time() - start_time < MAX_TIME):
     improved = False
     iterations += 1
 
@@ -160,12 +166,13 @@ def plot_progress():
 
 def IteratedLocalSearch(problem_name, acceptence):
   global iterations
-  global best_values
   global problem
+  global start_time
+  global MAX_TIME
 
   k = 25
   T = 500
-  MAX_TIME = 120  # sekunde
+  iterations = 0
 
   problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
   optimal = tsp.load(f'ALL_tsp/{problem_name}.opt.tour/{problem_name}.opt.tour')
@@ -176,15 +183,15 @@ def IteratedLocalSearch(problem_name, acceptence):
   fitness = fitnessFunction(s)
   (best_valuesSI if acceptence else best_valuesPA).append(fitness)
 
+  start_time = time.time()
+
   s = twoOptLocalSearch(s, k)
   fitness = fitnessFunction(s)
   (best_valuesSI if acceptence else best_valuesPA).append(fitness)
 
   best = s
 
-  start = time.time()
-  
-  while time.time() - start < MAX_TIME:
+  while time.time() - start_time < MAX_TIME:
     s_dash = doubleBridgePerturbation(s)
     s_dash = twoOptLocalSearch(s_dash, k)
 
@@ -200,7 +207,7 @@ def IteratedLocalSearch(problem_name, acceptence):
 
   best_fitness = fitnessFunction(best)
   print(
-    f"Ran for {int(time.time() - start)} seconds\n"
+    f"Ran for {int(time.time() - start_time)} seconds\n"
     f"and {iterations} iterations")
 
   error = (best_fitness - optimal_fitness) / optimal_fitness * 100
@@ -211,16 +218,13 @@ def IteratedLocalSearch(problem_name, acceptence):
 #-------------------------------------------------------------------------------
 
 def main():
+# kroA100, d198, lin318, pcb442, rat783, pr1002
+
   # 1 == Single Improvement
   # 0 == Probabilistic Acceptance
-  t1 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 1))
-  t2 = threading.Thread(target=IteratedLocalSearch, args=("kroA100", 0))
+  IteratedLocalSearch("kroA100", 1)  # Single Improvement
+  IteratedLocalSearch("kroA100", 0)  # Probabilistic Acceptance
 
-  t1.start()
-  t2.start()
-
-  t1.join()
-  t2.join()
 
   plot_progress()
 
