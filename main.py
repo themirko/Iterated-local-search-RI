@@ -13,7 +13,7 @@ start_time = None
 
 iterations = 0
 T = 920  
-MAX_TIME = 160  # sekunde
+MAX_TIME = 180  # sekunde
 
 best_values1 = []
 best_values2 = []
@@ -169,7 +169,7 @@ def probabilisticAcceptance(current, new):
     newFitness = fitnessFunction(new)
 
     if newFitness < currFitness:
-        return new
+        return new, newFitness
     
     diff = newFitness - currFitness
     x = math.exp(-diff/T)
@@ -181,27 +181,29 @@ def probabilisticAcceptance(current, new):
 #-------------------------------------------------------------------------------
 
 def plot_progress(label1, label2):
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(16, 9))
     
+    plt.axhline(y=optimal_fitness[problem_name],
+            color='green',
+            linewidth=1.5,
+            zorder=0)
+
     plt.plot(range(len(best_values1)),
-             best_values1,
-             marker='o',
-             markersize=3,
-             linewidth=1,
-             label=label1,
-             color="blue")
-    
+            best_values1,
+            linewidth=1.5,
+            label=label1,
+            color="blue")
+
     plt.plot(range(len(best_values2)),
-             best_values2,
-             marker='x',
-             markersize=3,
-             linewidth=1,
-             label=label2,
-             color="red")
+            best_values2,
+            linewidth=1.5,
+            label=label2,
+            color="red")
     
+    plt.yscale('log')
     plt.xlabel("Iterations")
     plt.ylabel("Best value per iteration")
-    plt.title("Progress per iteration")
+    plt.title(f"Progress per iteration for TSP: {problem_name}")
     plt.grid(True)
     plt.legend()
     plt.show()
@@ -217,7 +219,7 @@ def IteratedLocalSearch(acceptenceF, localsearchF, perturbationF):
 
   best_values= []
 
-  k = 25
+  k = 65 
   T = 920   
   iterations = 0
 
@@ -231,7 +233,6 @@ def IteratedLocalSearch(acceptenceF, localsearchF, perturbationF):
   best_values.append(best_fitness)
 
   while time.time() - start_time < MAX_TIME:
-    # for ii in range(3):
     s_dash = perturbationF(s)
     s_dash, _ = localsearchF(s_dash, k)
 
@@ -264,7 +265,7 @@ def main():
   global best_values1
   global best_values2
 
-  problem_name = "kroA100"
+  problem_name = "rat783"
   problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
 
   
@@ -272,12 +273,13 @@ def main():
                                      twoOptLocalSearch,
                                      doubleBridgePerturbation)
   
-  best_values2 = IteratedLocalSearch(singleImprovement, 
+  best_values2 = IteratedLocalSearch(probabilisticAcceptance, 
                                      twoOptLocalSearch,
-                                     segmentShufflePerturbation)
+                                     doubleBridgePerturbation)
 
+  plot_progress("Single Improvement", "Probabilistic Acceptance")
+  # plot_progress("Double Bridge", "Segment Shuffle")
 
-  plot_progress("DB", "SS")
 
 
 #-------------------------------------------------------------------------------
