@@ -7,14 +7,16 @@ import math
 #-------------------------------------------------------------------------------
 random.seed(47)
 
+problem_name = ""
 problem = None
 start_time = None
 
 iterations = 0
+T = 920  
 MAX_TIME = 160  # sekunde
 
-best_valuesSI = []
-best_valuesPA = []
+best_values1 = []
+best_values2 = []
 
 optimal_fitness = {
     "kroA100": 21282,
@@ -145,19 +147,23 @@ def twoOptLocalSearch(tour, k=20):
       if improved:
         break
 
-  return best_tour
+  return best_tour, best_fitness
 
 #-------------------------------------------------------------------------------
 
 def singleImprovement(current, new):
     
-    if fitnessFunction(new) < fitnessFunction(current):
-        return new
-    return current
+    currFitness = fitnessFunction(current)
+    newFitness = fitnessFunction(new)
+
+    if newFitness < currFitness:
+        return new, newFitness
+    
+    return current, currFitness
 
 #-------------------------------------------------------------------------------
 
-def probabilisticAcceptance(current, new, T):
+def probabilisticAcceptance(current, new):
     
     currFitness = fitnessFunction(current)
     newFitness = fitnessFunction(new)
@@ -168,29 +174,29 @@ def probabilisticAcceptance(current, new, T):
     diff = newFitness - currFitness
     x = math.exp(-diff/T)
     if random.random() < x:
-        return new
+        return new, newFitness
     
-    return current
+    return current, currFitness
 
 #-------------------------------------------------------------------------------
 
-def plot_progress():
+def plot_progress(label1, label2):
     plt.figure(figsize=(8, 5))
     
-    plt.plot(range(len(best_valuesSI)),
-             best_valuesSI,
+    plt.plot(range(len(best_values1)),
+             best_values1,
              marker='o',
              markersize=3,
              linewidth=1,
-             label="Single Acceptence",
+             label=label1,
              color="blue")
     
-    plt.plot(range(len(best_valuesPA)),
-             best_valuesPA,
+    plt.plot(range(len(best_values2)),
+             best_values2,
              marker='x',
              markersize=3,
              linewidth=1,
-             label="Probabilistic Acceptance",
+             label=label2,
              color="red")
     
     plt.xlabel("Iterations")
@@ -202,48 +208,41 @@ def plot_progress():
 
 #-------------------------------------------------------------------------------
 
-def IteratedLocalSearch(problem_name, acceptence):
+def IteratedLocalSearch(acceptenceF, localsearchF, perturbationF):
   global iterations
+  global T
   global problem
   global start_time
   global MAX_TIME
+
+  best_values= []
 
   k = 25
   T = 920   
   iterations = 0
 
-  problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
-  
   s = GenerateInitialSolution()
   fitness = fitnessFunction(s)
-  (best_valuesSI if acceptence else best_valuesPA).append(fitness)
+  best_values.append(fitness)
 
   start_time = time.time()
 
-  s = twoOptLocalSearch(s, k)
-  fitness = fitnessFunction(s)
-  (best_valuesSI if acceptence else best_valuesPA).append(fitness)
-
-  best = s
+  s, best_fitness = localsearchF(s, k)
+  best_values.append(best_fitness)
 
   while time.time() - start_time < MAX_TIME:
     # for ii in range(3):
-    s_dash = segmentShufflePerturbation(s)
-    s_dash = twoOptLocalSearch(s_dash, k)
+    s_dash = perturbationF(s)
+    s_dash, _ = localsearchF(s_dash, k)
 
-    if acceptence:
-      s = singleImprovement(s, s_dash)
-    else:
-      s = probabilisticAcceptance(s, s_dash, T)
-      T *= 0.99
+    s, fitness = acceptenceF(s, s_dash)
+    T *= 0.99
 
-    fitness = fitnessFunction(s)
-    (best_valuesSI if acceptence else best_valuesPA).append(fitness)
+    best_values.append(fitness)
 
-    if fitness < fitnessFunction(best):
-      best = s
+    if fitness < best_fitness:
+      best_fitness = fitness
 
-  best_fitness = fitnessFunction(best)
   print(
     f"Ran for {int(time.time() - start_time)} seconds\n"
     f"and {iterations} iterations")
@@ -251,20 +250,34 @@ def IteratedLocalSearch(problem_name, acceptence):
   error = ((best_fitness - optimal_fitness[problem_name]) / 
             optimal_fitness[problem_name] * 100)
   
-  print(f"Error ({'Single Improvement' if acceptence 
-                                       else 'Probabilistic Acceptance'}):" 
-                                       f"{error:.2f}%")
+  print(f"Error {error:.2f}%")
+
+  return best_values
 
 #-------------------------------------------------------------------------------
 
 def main():
-  # 1 == Single Improvement
-  # 0 == Probabilistic Acceptance
-  IteratedLocalSearch("kroA100", 1)  # Single Improvement
-  IteratedLocalSearch("kroA100", 0)  # Probabilistic Acceptance
+  
+  global problem_name
+  global problem
+
+  global best_values1
+  global best_values2
+
+  problem_name = "kroA100"
+  problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
+
+  
+  best_values1 = IteratedLocalSearch(singleImprovement, 
+                                     twoOptLocalSearch,
+                                     doubleBridgePerturbation)
+  
+  best_values2 = IteratedLocalSearch(singleImprovement, 
+                                     twoOptLocalSearch,
+                                     segmentShufflePerturbation)
 
 
-  plot_progress()
+  plot_progress("DB", "SS")
 
 
 #-------------------------------------------------------------------------------
