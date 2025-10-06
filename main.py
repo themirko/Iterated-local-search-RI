@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import random
 import time
 import math
+import csv
+
 
 #-------------------------------------------------------------------------------
 random.seed(47)
@@ -13,7 +15,7 @@ start_time = None
 
 iterations = 0
 T = 920  
-MAX_TIME = 180  # sekunde
+MAX_TIME = 300  # sekunde
 
 best_values1 = []
 best_values2 = []
@@ -31,7 +33,14 @@ optimal_fitness = {
     "pr2392": 378032,
     "pcb3038": 137694,
     "fl3795": 28772,
-    "rl5915": 565530
+    "rl5915": 565530,
+    "gr666": 294358,
+    "hk48": 11461,
+    "brazil58": 25395,
+    "a280": 2579,
+    "ali535": 202310,
+    "bayg29": 1610,
+    "u2152": 64253
 }
 
 #-------------------------------------------------------------------------------
@@ -219,7 +228,7 @@ def IteratedLocalSearch(acceptenceF, localsearchF, perturbationF):
 
   best_values= []
 
-  k = 65 
+  k = 25 
   T = 920   
   iterations = 0
 
@@ -244,16 +253,7 @@ def IteratedLocalSearch(acceptenceF, localsearchF, perturbationF):
     if fitness < best_fitness:
       best_fitness = fitness
 
-  print(
-    f"Ran for {int(time.time() - start_time)} seconds\n"
-    f"and {iterations} iterations")
-
-  error = ((best_fitness - optimal_fitness[problem_name]) / 
-            optimal_fitness[problem_name] * 100)
-  
-  print(f"Error {error:.2f}%")
-
-  return best_values
+  return best_fitness
 
 #-------------------------------------------------------------------------------
 
@@ -261,25 +261,42 @@ def main():
   
   global problem_name
   global problem
+  global iterations
+  global start_time
 
-  global best_values1
-  global best_values2
+  with open('results.csv', mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['problem_name', 
+                      'best_fitness', 
+                      'optimal_fitness', 
+                      'duration_s', 
+                      'iterations', 
+                      'error_%'])
 
-  problem_name = "rat783"
-  problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
+    for problem_name, opt_val in optimal_fitness.items():
+        
+        print(f"\n=== Running {problem_name} ===")
+        problem = tsp.load(f'ALL_tsp/{problem_name}.tsp/{problem_name}.tsp')
 
-  
-  best_values1 = IteratedLocalSearch(singleImprovement, 
-                                     twoOptLocalSearch,
-                                     doubleBridgePerturbation)
-  
-  best_values2 = IteratedLocalSearch(probabilisticAcceptance, 
-                                     twoOptLocalSearch,
-                                     doubleBridgePerturbation)
+        start_time = time.time()
+        best_fitness = IteratedLocalSearch(
+            probabilisticAcceptance,
+            twoOptLocalSearch,
+            segmentShufflePerturbation
+        )
+        elapsed = int(time.time() - start_time)
+        iters = iterations
 
-  plot_progress("Single Improvement", "Probabilistic Acceptance")
-  # plot_progress("Double Bridge", "Segment Shuffle")
+        error = (best_fitness - opt_val) / opt_val * 100
+        print(f"{problem_name} | best: {best_fitness} | opt: {opt_val} | "
+              f"time: {elapsed}s | iters: {iters} | error: {error:.2f}%")
 
+        writer.writerow([problem_name,
+                          best_fitness,
+                          opt_val,
+                          elapsed,
+                          iters,
+                          f"{error:.2f}"])
 
 
 #-------------------------------------------------------------------------------
